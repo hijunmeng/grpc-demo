@@ -1,0 +1,77 @@
+buildscript {
+	repositories {
+		mavenCentral()
+	}
+	dependencies {
+		classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.5'
+	}
+}
+
+def grpcVersion = '1.15.1'
+def protocVersion = '3.5.1-1'
+def slf4jVersion = '1.7.25'
+
+apply plugin: 'java'
+apply plugin: 'com.google.protobuf'
+
+//此配置必须放在plugin下面，注意顺序
+protobuf {
+	protoc {
+		artifact = "com.google.protobuf:protoc:${protocVersion}"
+	}
+	plugins {
+		grpc {
+			artifact = "io.grpc:protoc-gen-grpc-java:${grpcVersion}"
+		}
+	}
+	generateProtoTasks {
+		all()*.plugins {
+			grpc {}
+		}
+	}
+}
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = 1.8
+
+repositories {
+	mavenCentral()
+}
+
+// Inform IDEs like IntelliJ IDEA, Eclipse or NetBeans about the generated code.
+//设置源码路径才能让ide识别出类
+sourceSets {
+	main {
+		java {
+			srcDirs 'build/generated/source/proto/main/grpc'
+			srcDirs 'build/generated/source/proto/main/java'
+		}
+	}
+}
+dependencies {
+	//https://github.com/grpc/grpc-java/blob/master/README.md
+	compile "io.grpc:grpc-netty-shaded:${grpcVersion}"
+	compile "io.grpc:grpc-protobuf:${grpcVersion}"
+	compile "io.grpc:grpc-stub:${grpcVersion}"
+	//日志
+	compile "org.slf4j:slf4j-api:${slf4jVersion}"
+	compile "org.slf4j:slf4j-simple:${slf4jVersion}"
+}
+
+//第一种打包方式
+jar {
+	manifest {
+		attributes(
+				"Manifest-Version": 1.0,
+				"Main-Class": "com.example.grpcs.proto.Main")
+	}
+	from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+	into('assets') {
+		from 'assets'
+	}
+}
+//第二种打包方式，打包后见build/distributions，解压后里面有bat可以直接运行
+//apply plugin: 'application'
+//mainClassName= "com.example.grpcs.proto.Main"
+
+
